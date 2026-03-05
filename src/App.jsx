@@ -8,9 +8,10 @@ import UserFindOne from "./pages/users/UserFindOne";
 import UserList from "./pages/users/UserList";
 import Users from "./pages/users/Users";
 import ProtectedRoutes from "./routes/ProtectedRoutes";
+import { useAuth } from "./security/authContex";
 
 function App() {
-  const isAllowed = true;
+  const { isLoggedIn : isAllowed } = useAuth();
 
   return (
     <>
@@ -27,12 +28,14 @@ function App() {
             <Route path=":id" element={<UserFindOne />} />
           </Route>
 
+          <Route path="/" element={<Navigate to='/dashboard' />} />
           <Route path="*" element={<Page404 />} />
         </Routes>
       ) : (
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          <Route path="*" element={<Navigate to='/' />} />
         </Routes>
       )}
     </>
