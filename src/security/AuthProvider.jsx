@@ -1,39 +1,46 @@
-import { useEffect, useState } from "react";
-import { AuthContext } from "./authContex";
+import React, { useEffect, useState, useMemo } from 'react';
+import AuthContext from './authContex';
 
+export const AuthProvider = ({ children }) => {
+  const [session, setSession] = useState(() => {
+    const s = localStorage.getItem('session');
+    return s ? JSON.parse(s) : null;
+  });
 
-function AuthProvider({ children }){
-    const [session, setSession] = useState(null)
+  useEffect(() => {
+    if (session) localStorage.setItem('session', JSON.stringify(session));
+    else localStorage.removeItem('session');
+  }, [session]);
 
-    useEffect(()=>{
-        const session = localStorage.getItem('session')
-
-        if(session){
-            setSession(JSON.parse(session))
-        }
-    },[])
-
-    const login = (username, password) => {
-        if(username ==='admin' && password ==='1234'){
-            setSession({ username })
-            localStorage.setItem('session', JSON.stringify({ username}))
-            return true
-        }else{
-            return false
-        }
+  const login = async (username, password) => {
+    try {
+      const resp = await fetch('https://fakestoreapi.com/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await resp.json();
+      console.log('login response:', data); 
+      if (data?.token) {
+        const userSession = { username, token: data.token };
+        setSession(userSession);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('login error', error);
+      return false;
     }
+  };
 
-    const logout = () => {
-        setSession(null)
-        localStorage.removeItem('session')
-    }
+  const logout = () => setSession(null);
 
-    
-    return (
-        <AuthContext.Provider value={{ session, login, logout, isLoggedIn: !!session}} >
-            {children}
-        </AuthContext.Provider> 
-    )
-}
+  const value = useMemo(() => ({
+    session,
+    login,
+    logout,
+    isLoggedIn: !!session
+  }), [session]);
 
-export default AuthProvider;
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
